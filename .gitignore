@@ -1,0 +1,18 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.DS_Store
+*.log
+
+# Production visitor data must never be committed
+data/raw/*
+!data/raw/.gitkeep
+data/normalized/*
+!data/normalized/.gitkeep
+data/history/*
+!data/history/.gitkeep
+
+# Generated production reports may contain PII
+reports/*
+!reports/.gitkeep
