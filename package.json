@@ -5,6 +5,7 @@
   "type": "module",
   "description": "AI-assisted weekly analytics pipeline for Vector.co website visitor data",
   "scripts": {
+    "fetch": "node --env-file=.env scripts/fetch-vector-api.mjs",
     "normalize": "node scripts/normalize-vector.mjs",
     "compare": "node scripts/compare-history.mjs",
     "report": "node scripts/generate-report.mjs"
