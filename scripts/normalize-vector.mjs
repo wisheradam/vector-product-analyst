@@ -103,6 +103,18 @@ function normalizeRow(row) {
       raw.personalEmail
     ),
     title: firstValue(pick(row, 'Job Title', 'title'), contact.title, contact.jobTitle, contact.job_title),
+    department: firstValue(
+      pick(row, 'Department', 'department'),
+      contact.department,
+      payload.department,
+      raw.department
+    ),
+    seniority: firstValue(
+      pick(row, 'Seniority', 'seniority'),
+      contact.seniority,
+      payload.seniority,
+      raw.seniority
+    ),
     company: firstValue(
       pick(row, 'Company', 'company'),
       companyObj.name,
@@ -118,6 +130,20 @@ function normalizeRow(row) {
       contact.company_domain,
       payload.companyDomain,
       raw.companyDomain
+    ),
+    industry: firstValue(
+      pick(row, 'Industry', 'industry'),
+      contact.industry,
+      payload.industry,
+      raw.industry,
+      companyObj.industry
+    ),
+    companySize: firstValue(
+      pick(row, 'Company Size', 'companySize'),
+      contact.companySize,
+      payload.companySize,
+      raw.companySize,
+      companyObj.size
     ),
     companyLinkedinUrl: firstValue(
       pick(row, 'Company LinkedIn', 'companyLinkedinUrl'),
@@ -168,6 +194,18 @@ function normalizeRow(row) {
       payload.lastVisitAt,
       raw.lastVisitAt
     ),
+    evaluatedAt: firstValue(
+      pick(row, 'Evaluated At', 'evaluatedAt'),
+      contact.evaluatedAt,
+      payload.evaluatedAt,
+      raw.evaluatedAt
+    ),
+    uniquePagesVisited: Number(firstValue(
+      pick(row, 'Unique Pages Visited', 'uniquePagesVisited'),
+      contact.uniquePagesVisited,
+      payload.uniquePagesVisited,
+      raw.uniquePagesVisited
+    )) || 0,
     segmentId: firstValue(
       pick(row, 'Segment ID', 'segmentId'),
       contact.segmentId,
