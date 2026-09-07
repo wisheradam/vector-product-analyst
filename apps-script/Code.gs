@@ -20,52 +20,8 @@ function doPost(e) {
     }
 
     var spreadsheet = getOrCreateSpreadsheet_();
-    var sheet = spreadsheet.getSheetByName('Events');
-
-    var headers = [
-      'Received At',
-      'Event Type',
-      'Visitor ID',
-      'Primary ID',
-      'Primary ID Type',
-      'First Name',
-      'Last Name',
-      'Email',
-      'Business Email',
-      'Personal Email',
-      'Job Title',
-      'Company',
-      'Company Domain',
-      'Company LinkedIn',
-      'LinkedIn',
-      'Country',
-      'Location',
-      'Page Title',
-      'Page URL',
-      'Referrer',
-      'First Visit At',
-      'Last Visit At',
-      'Segment ID',
-      'Segment Name',
-      'UTM Source',
-      'UTM Medium',
-      'UTM Campaign',
-      'UTM Content',
-      'UTM Term',
-      'Intent Topic',
-      'Intent Score',
-      'Visitor Activity Count',
-      'Raw JSON'
-    ];
-
-    if (!sheet) {
-      sheet = spreadsheet.insertSheet('Events');
-      sheet.appendRow(headers);
-    } else if (sheet.getLastRow() === 0) {
-      sheet.appendRow(headers);
-    } else {
-      ensureHeaders_(sheet, headers);
-    }
+    var headers = getHeaders_();
+    var sheet = getOrCreateEventsSheet_(spreadsheet, headers);
 
     var payload = firstObject_(data.data, data.payload, data);
     var contact = firstObject_(payload.contact, data.contact, payload.visitor, payload);
@@ -144,7 +100,7 @@ function doPost(e) {
       lock.releaseLock();
     }
 
-    return jsonResponse_({ success: true, received: true });
+    return jsonResponse_({ success: true, received: true, sheet: sheet.getName() });
   } catch (error) {
     return jsonResponse_({ success: false, error: String(error) });
   }
@@ -155,6 +111,44 @@ function doGet() {
     status: 'ok',
     service: 'Vector Website Analytics Collector'
   });
+}
+
+function getHeaders_() {
+  return [
+    'Received At',
+    'Event Type',
+    'Visitor ID',
+    'Primary ID',
+    'Primary ID Type',
+    'First Name',
+    'Last Name',
+    'Email',
+    'Business Email',
+    'Personal Email',
+    'Job Title',
+    'Company',
+    'Company Domain',
+    'Company LinkedIn',
+    'LinkedIn',
+    'Country',
+    'Location',
+    'Page Title',
+    'Page URL',
+    'Referrer',
+    'First Visit At',
+    'Last Visit At',
+    'Segment ID',
+    'Segment Name',
+    'UTM Source',
+    'UTM Medium',
+    'UTM Campaign',
+    'UTM Content',
+    'UTM Term',
+    'Intent Topic',
+    'Intent Score',
+    'Visitor Activity Count',
+    'Raw JSON'
+  ];
 }
 
 function getOrCreateSpreadsheet_() {
@@ -170,35 +164,53 @@ function getOrCreateSpreadsheet_() {
   return spreadsheet;
 }
 
-function ensureHeaders_(sheet, headers) {
-  var existing = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getValues()[0];
-  var needsUpdate = false;
-
-  for (var i = 0; i < headers.length; i++) {
-    if (existing[i] !== headers[i]) {
-      needsUpdate = true;
-      break;
-    }
-  }
-
-  if (needsUpdate) {
-    // Preserve old data by creating a new schema sheet instead of shifting columns.
-    var spreadsheet = sheet.getParent();
-    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Etc/UTC', 'yyyyMMdd-HHmmss');
-    var newSheet = spreadsheet.insertSheet('Events-v2-' + timestamp);
-    newSheet.appendRow(headers);
-    PropertiesService.getScriptProperties().setProperty('VECTOR_EVENTS_SHEET', newSheet.getName());
-  }
-}
-
-function getEventsSheet_(spreadsheet) {
+function getOrCreateEventsSheet_(spreadsheet, headers) {
   var props = PropertiesService.getScriptProperties();
   var configuredName = props.getProperty('VECTOR_EVENTS_SHEET');
+
   if (configuredName) {
     var configured = spreadsheet.getSheetByName(configuredName);
-    if (configured) return configured;
+    if (configured && headersMatch_(configured, headers)) return configured;
   }
-  return spreadsheet.getSheetByName('Events');
+
+  var original = spreadsheet.getSheetByName('Events');
+  if (!original) {
+    original = spreadsheet.insertSheet('Events');
+    original.appendRow(headers);
+    props.setProperty('VECTOR_EVENTS_SHEET', 'Events');
+    return original;
+  }
+
+  if (original.getLastRow() === 0) {
+    original.appendRow(headers);
+    props.setProperty('VECTOR_EVENTS_SHEET', 'Events');
+    return original;
+  }
+
+  if (headersMatch_(original, headers)) {
+    props.setProperty('VECTOR_EVENTS_SHEET', 'Events');
+    return original;
+  }
+
+  var v2 = spreadsheet.getSheetByName('Events v2');
+  if (!v2) {
+    v2 = spreadsheet.insertSheet('Events v2');
+    v2.appendRow(headers);
+  } else if (v2.getLastRow() === 0) {
+    v2.appendRow(headers);
+  }
+
+  props.setProperty('VECTOR_EVENTS_SHEET', 'Events v2');
+  return v2;
+}
+
+function headersMatch_(sheet, headers) {
+  if (!sheet || sheet.getLastColumn() < headers.length || sheet.getLastRow() < 1) return false;
+  var existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  for (var i = 0; i < headers.length; i++) {
+    if (existing[i] !== headers[i]) return false;
+  }
+  return true;
 }
 
 function firstObject_() {
