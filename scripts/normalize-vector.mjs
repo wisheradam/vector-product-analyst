@@ -42,6 +42,9 @@ function normalizeRow(row) {
   const companyObj = firstObject(contact.company, payload.company, raw.company, {});
   const pageObj = firstObject(contact.page, payload.page, raw.page, {});
   const intentObj = firstObject(payload.intent, raw.intent, {});
+  const activities = Array.isArray(payload.visitorActivities)
+    ? payload.visitorActivities
+    : (Array.isArray(raw.visitorActivities) ? raw.visitorActivities : []);
 
   return {
     receivedAt: firstValue(
@@ -57,44 +60,80 @@ function normalizeRow(row) {
       payload.type,
       payload.eventType
     ),
-    eventId: firstValue(
-      pick(row, 'Event ID', 'eventId'),
-      raw.id,
-      raw.eventId,
-      payload.id,
-      payload.eventId
-    ),
     visitorId: firstValue(
       pick(row, 'Visitor ID', 'visitorId'),
+      contact.upId,
+      payload.upId,
+      raw.upId,
       contact.vvid,
       contact.visitorId,
       payload.vvid,
       payload.visitorId,
       raw.vvid,
-      raw.visitorId
+      raw.visitorId,
+      contact.primaryId,
+      payload.primaryId,
+      raw.primaryId
+    ),
+    primaryId: firstValue(
+      pick(row, 'Primary ID', 'primaryId'),
+      contact.primaryId,
+      payload.primaryId,
+      raw.primaryId
+    ),
+    primaryIdType: firstValue(
+      pick(row, 'Primary ID Type', 'primaryIdType'),
+      contact.primaryIdType,
+      payload.primaryIdType,
+      raw.primaryIdType
     ),
     firstName: firstValue(pick(row, 'First Name', 'firstName'), contact.firstName, contact.first_name),
     lastName: firstValue(pick(row, 'Last Name', 'lastName'), contact.lastName, contact.last_name),
-    email: firstValue(pick(row, 'Email', 'email'), contact.email),
+    email: firstValue(pick(row, 'Email', 'email'), contact.email, payload.email, raw.email),
+    businessEmail: firstValue(
+      pick(row, 'Business Email', 'businessEmail'),
+      contact.businessEmail,
+      payload.businessEmail,
+      raw.businessEmail
+    ),
+    personalEmail: firstValue(
+      pick(row, 'Personal Email', 'personalEmail'),
+      contact.personalEmail,
+      payload.personalEmail,
+      raw.personalEmail
+    ),
     title: firstValue(pick(row, 'Job Title', 'title'), contact.title, contact.jobTitle, contact.job_title),
     company: firstValue(
       pick(row, 'Company', 'company'),
       companyObj.name,
       contact.companyName,
-      typeof contact.company === 'string' ? contact.company : ''
+      typeof contact.company === 'string' ? contact.company : '',
+      typeof payload.company === 'string' ? payload.company : '',
+      typeof raw.company === 'string' ? raw.company : ''
     ),
     companyDomain: firstValue(
       pick(row, 'Company Domain', 'companyDomain'),
       companyObj.domain,
       contact.companyDomain,
-      contact.company_domain
+      contact.company_domain,
+      payload.companyDomain,
+      raw.companyDomain
+    ),
+    companyLinkedinUrl: firstValue(
+      pick(row, 'Company LinkedIn', 'companyLinkedinUrl'),
+      contact.companyLinkedinUrl,
+      payload.companyLinkedinUrl,
+      raw.companyLinkedinUrl
     ),
     linkedinUrl: firstValue(
       pick(row, 'LinkedIn', 'linkedinUrl'),
       contact.linkedinUrl,
       contact.linkedin,
-      contact.linkedin_url
+      contact.linkedin_url,
+      payload.linkedinUrl,
+      raw.linkedinUrl
     ),
+    country: firstValue(pick(row, 'Country', 'country'), contact.country, payload.country, raw.country),
     location: stringifyValue(firstValue(pick(row, 'Location', 'location'), contact.location, payload.location, raw.location)),
     pageTitle: firstValue(
       pick(row, 'Page Title', 'pageTitle'),
@@ -117,12 +156,35 @@ function normalizeRow(row) {
       payload.referrer,
       raw.referrer
     ),
+    firstVisitAt: firstValue(
+      pick(row, 'First Visit At', 'firstVisitAt'),
+      contact.firstVisitAt,
+      payload.firstVisitAt,
+      raw.firstVisitAt
+    ),
     lastVisitAt: firstValue(
       pick(row, 'Last Visit At', 'lastVisitAt'),
       contact.lastVisitAt,
       payload.lastVisitAt,
       raw.lastVisitAt
     ),
+    segmentId: firstValue(
+      pick(row, 'Segment ID', 'segmentId'),
+      contact.segmentId,
+      payload.segmentId,
+      raw.segmentId
+    ),
+    segmentName: firstValue(
+      pick(row, 'Segment Name', 'segmentName'),
+      contact.segmentName,
+      payload.segmentName,
+      raw.segmentName
+    ),
+    utmSource: firstValue(pick(row, 'UTM Source', 'utmSource'), contact.utmSource, payload.utmSource, raw.utmSource),
+    utmMedium: firstValue(pick(row, 'UTM Medium', 'utmMedium'), contact.utmMedium, payload.utmMedium, raw.utmMedium),
+    utmCampaign: firstValue(pick(row, 'UTM Campaign', 'utmCampaign'), contact.utmCampaign, payload.utmCampaign, raw.utmCampaign),
+    utmContent: firstValue(pick(row, 'UTM Content', 'utmContent'), contact.utmContent, payload.utmContent, raw.utmContent),
+    utmTerm: firstValue(pick(row, 'UTM Term', 'utmTerm'), contact.utmTerm, payload.utmTerm, raw.utmTerm),
     intentTopic: firstValue(
       pick(row, 'Intent Topic', 'intentTopic'),
       intentObj.topic,
@@ -136,6 +198,11 @@ function normalizeRow(row) {
       payload.intentScore,
       raw.intentScore
     ),
+    visitorActivityCount: Number(firstValue(
+      pick(row, 'Visitor Activity Count', 'visitorActivityCount'),
+      activities.length
+    )) || 0,
+    visitorActivities: activities,
     raw
   };
 }
