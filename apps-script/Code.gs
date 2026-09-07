@@ -68,8 +68,12 @@ function doPost(e) {
       firstValue_(contact.businessEmail, payload.businessEmail, data.businessEmail),
       firstValue_(contact.personalEmail, payload.personalEmail, data.personalEmail),
       firstValue_(contact.title, contact.jobTitle, contact.job_title),
+      firstValue_(contact.department, payload.department, data.department),
+      firstValue_(contact.seniority, payload.seniority, data.seniority),
       firstValue_(company.name, contact.companyName, typeof contact.company === 'string' ? contact.company : '', payload.company, data.company),
       firstValue_(company.domain, contact.companyDomain, contact.company_domain, payload.companyDomain, data.companyDomain),
+      firstValue_(contact.industry, payload.industry, data.industry, company.industry),
+      firstValue_(contact.companySize, payload.companySize, data.companySize, company.size),
       firstValue_(contact.companyLinkedinUrl, payload.companyLinkedinUrl, data.companyLinkedinUrl),
       firstValue_(contact.linkedinUrl, contact.linkedin, contact.linkedin_url, payload.linkedinUrl, data.linkedinUrl),
       firstValue_(contact.country, payload.country, data.country),
@@ -79,6 +83,8 @@ function doPost(e) {
       firstValue_(page.referrer, contact.referrer, payload.referrer, data.referrer),
       firstValue_(contact.firstVisitAt, payload.firstVisitAt, data.firstVisitAt),
       firstValue_(contact.lastVisitAt, payload.lastVisitAt, data.lastVisitAt),
+      firstValue_(contact.evaluatedAt, payload.evaluatedAt, data.evaluatedAt),
+      firstValue_(contact.uniquePagesVisited, payload.uniquePagesVisited, data.uniquePagesVisited),
       firstValue_(contact.segmentId, payload.segmentId, data.segmentId),
       firstValue_(contact.segmentName, payload.segmentName, data.segmentName),
       firstValue_(contact.utmSource, payload.utmSource, data.utmSource),
@@ -126,8 +132,12 @@ function getHeaders_() {
     'Business Email',
     'Personal Email',
     'Job Title',
+    'Department',
+    'Seniority',
     'Company',
     'Company Domain',
+    'Industry',
+    'Company Size',
     'Company LinkedIn',
     'LinkedIn',
     'Country',
@@ -137,6 +147,8 @@ function getHeaders_() {
     'Referrer',
     'First Visit At',
     'Last Visit At',
+    'Evaluated At',
+    'Unique Pages Visited',
     'Segment ID',
     'Segment Name',
     'UTM Source',
@@ -173,35 +185,35 @@ function getOrCreateEventsSheet_(spreadsheet, headers) {
     if (configured && headersMatch_(configured, headers)) return configured;
   }
 
-  var original = spreadsheet.getSheetByName('Events');
-  if (!original) {
-    original = spreadsheet.insertSheet('Events');
-    original.appendRow(headers);
-    props.setProperty('VECTOR_EVENTS_SHEET', 'Events');
-    return original;
+  var sheets = spreadsheet.getSheets();
+  var maxVersion = 0;
+
+  for (var i = 0; i < sheets.length; i++) {
+    var sheet = sheets[i];
+    var name = sheet.getName();
+    var match = name.match(/^Events(?: v(\d+))?$/);
+    if (!match) continue;
+
+    var version = match[1] ? Number(match[1]) : 1;
+    if (version > maxVersion) maxVersion = version;
+
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(headers);
+      props.setProperty('VECTOR_EVENTS_SHEET', name);
+      return sheet;
+    }
+
+    if (headersMatch_(sheet, headers)) {
+      props.setProperty('VECTOR_EVENTS_SHEET', name);
+      return sheet;
+    }
   }
 
-  if (original.getLastRow() === 0) {
-    original.appendRow(headers);
-    props.setProperty('VECTOR_EVENTS_SHEET', 'Events');
-    return original;
-  }
-
-  if (headersMatch_(original, headers)) {
-    props.setProperty('VECTOR_EVENTS_SHEET', 'Events');
-    return original;
-  }
-
-  var v2 = spreadsheet.getSheetByName('Events v2');
-  if (!v2) {
-    v2 = spreadsheet.insertSheet('Events v2');
-    v2.appendRow(headers);
-  } else if (v2.getLastRow() === 0) {
-    v2.appendRow(headers);
-  }
-
-  props.setProperty('VECTOR_EVENTS_SHEET', 'Events v2');
-  return v2;
+  var newName = maxVersion === 0 ? 'Events' : 'Events v' + (maxVersion + 1);
+  var newSheet = spreadsheet.insertSheet(newName);
+  newSheet.appendRow(headers);
+  props.setProperty('VECTOR_EVENTS_SHEET', newName);
+  return newSheet;
 }
 
 function headersMatch_(sheet, headers) {
